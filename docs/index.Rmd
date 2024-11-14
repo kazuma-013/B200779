@@ -9,24 +9,97 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Data Preparation
+The following codes run the health data Public Health Scotland prescribing data from December 2023 to May 2024 and joins them with the population and health board data.
+```{r}
+library(tidyverse)
+library(janitor)
+library(gt)
+library(here)
+library(readr)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+data_dec2023 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/00cdf8d7-f784-4e87-894c-34f2540ea6ab/download/pitc202312.csv") %>% 
+  clean_names()
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+data_jan2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d3eaaf84-0f3b-4fb8-9460-e33503095fbe/download/pitc202401.csv") %>% 
+  clean_names()
 
-```{r cars}
-summary(cars)
+data_feb2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/86fda652-0e1d-48bb-9368-aa2a560d925b/download/pitc202402.csv") %>% 
+  clean_names()
+
+data_march2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a42762ac-47cb-4fb6-b9b1-2478a588c0ed/download/pitc202403.csv") %>% 
+  clean_names()
+
+data_april2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/409a02f2-b77c-47a0-917d-4a5a1c90f182/download/pitc202404.csv") %>% 
+  clean_names()
+
+data_may2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5fbbd126-6166-4249-9620-7ed78e877297/download/pitc202405.csv") %>% 
+  clean_names()
+
+hb_name <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>%
+  clean_names() %>%
+  rename(hbt = hb)
+
+con_data <- rbind(data_dec2023, data_jan2024, data_feb2024,  data_march2024, data_april2024, data_may2024)
+
+population_data <- read_csv("C:/Users/koura/OneDrive/デスクトップ/4th year/Data Science/data_science/_data-science-for-health-bms-24-25/B200779/data/UV103_age_health_board_census.csv", skip = 10) %>% 
+  rename(Spare = "...6", 
+         hb_name = "Health Board Area 2019",
+         hb_population = Count) %>% 
+  filter(Age == "All people" & Sex == "All people") %>% 
+  select(hb_name, hb_population) %>% 
+  mutate(hb_name = paste("NHS", hb_name))
+
+joined_data <- con_data %>% 
+  full_join(hb_name) %>%
+  full_join(population_data)
+
+joined_data <- joined_data %>%
+  mutate (paid_date_month = paid_date_month %>%
+          factor() %>% 
+          fct_recode("December" = "202312", 
+                     "January" = "202401",
+                     "February" = "202402",
+                     "March" = "202403", 
+                     "April" = "202404",
+                     "May" = "202405"))
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+## Data processing
+The "joined_data" is processed to filter out prescription data for hydrocortisone cream/ointment in NHS lothian, NHS Greater Glasgow and Clyde and NHS Lanarkshire. The selection of health board was based on population size. To account for population differences among health boards, number of prescription per person was calculated as "per_person".
+```{r}
+refined_data <- joined_data %>%
+  filter(str_detect(bnf_item_description, "HYDROCORTISONE"),
+         grepl('CREAM|OINTMENT', bnf_item_description,), 
+         hb_name == "NHS Lothian" | hb_name == "NHS Greater Glasgow and Clyde" | hb_name == "NHS Lanarkshire") %>% 
+  group_by(hb_name, paid_date_month, hb_population) %>%
+  summarise(total_prescription = sum(paid_quantity)) %>%
+  mutate("per_person" =  total_prescription/hb_population)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Table
+```{r}
+table_HCS <- refined_data %>%
+  group_by(hb_name) %>%
+  select(paid_date_month, per_person) %>%
+  gt() %>%
+  cols_label(paid_date_month = "Month",
+            per_person = "Number of prescription per person") %>%
+    tab_header(title = "Prescription rate of hydrocortisone cream/ointment in 2023/24",
+             subtitle = "Data from NHS Lanarkshire, NHS Greater Glasgow and Clyde and NHS Lothian") %>%
+  cols_align(align = "center", columns = per_person)
 
-##test
+table_HCS
+```
+
+## Graph
+```{r}
+refined_data %>%
+  ggplot(aes(x = paid_date_month, y = per_person, color = hb_name, group = hb_name)) +
+  labs(x = "Month", y = "Number of prescription per person", title = "Prescription rate of hydrocortisone cream/ointment during allergy seasons in 2023/24", color = "Name of health board") +
+  geom_point() +
+  geom_line()
+```
+
+The graph illustrates a increase in prescription rate of hydrocortisone cream/ointment at the turn of year. Although the rates are unchanged/equal in January and February, they gradually increase in spring months for all health board regions studied. This is probably due to an increase in allergy cases caused by pollen. 
