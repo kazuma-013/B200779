@@ -2,7 +2,10 @@
 title: "Assessment"
 author: "Kazuma Oura"
 date: "2024-11-01"
-output: html_document
+output:
+  html_document:
+    toc: true
+    theme: united
 ---
 
 ```{r setup, include=FALSE}
@@ -11,10 +14,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Introduction
 Atopic Eczema (AE) is a chronic skin condition that makes the skin inflamed, red, itchy and dry. It is commonly found in children and is associated with allergic reactions in response to allergy antigens originating from food, house dust mites or pollen. Eczema creams are typically used to treat such symptoms, and as a person who grew up with AE, this is a familiar pharmacological treatment. This personal interest has driven me to consider the eczema cream as the research focus for this report.
 
-Spring is said to be the season with the most allergy cases among children, perhaps coincided with both increased pollen and children going out. Hence, for the first part of this report, we will observe the change in prescription rate of Eczema cream during December 2023 to May 2024 which is the most recently available data. The health board regions considered are NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside, as these were the regions were data was consistently available during those months. 
+Spring is said to be the season with the most allergy cases among children, perhaps caused by both increased pollen and children going out. This causes the chronic symptoms of AE to worsen. It grabbed my interest whether prescription rate of eczema treatment follows this seasonal trend in Scotland. Hence, for the first part of this report, we will analyse the change in prescription rate of Eczema cream from December 2023 to May 2024 which is the most recently available data. This selection of months will allow us to observe how eczema cream prescription increases as pollen production becomes more abundant in spring. The health board regions considered are NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside, as these were the regions were data was consistently available during those months. 
 
-For the second part of the report, we will observe the same months in 2020/21 in the same health board regions. During this time, the frequency of people going out would have been drastically lower than in 2023/24 due to the COVID-19 lockdown. Thus, it is reasonable to predict that allergy cases caused by pollen will be lowered too. In fact, the lockdown season did improve my symptoms of AE. I wondered if lockdown similarly affected other patients who have AE. Therefore, the research question for this report is: How does the prescription rate of Eczema cream change during winter/spring seasons, and what effect did COVID-19 lockdown have on this? 
-## Installing Packages
+For the second part of the report, we will observe the same months in 2020/21 in the same health board regions. During this time, the number of people going out would have been drastically lower than in 2023/24 due to the nation wide COVID-19 lockdown that lasted from January 2021 to July 2021. Our intuitive prediction would be that AE cases, and subsequently eczema cream prescription, would be lower as pollen exposure, a key contributor to allergic reactions, would have been reduced. In fact, the lockdown season did improve my symptoms of AE. I wondered if lockdown similarly affected other patients who have AE. Therefore, the research question for this report is: How does the prescription rate of eczema cream change during winter/spring seasons, and what effect did COVID-19 lockdown have on this?
+
+## Installing packages
 Before analysing the data, various packages are installed into R using the following code. 
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -28,12 +32,12 @@ library(patchwork)
 ```
 
 # Analysing data from 2023/24
-## Data Preparation
+## Data preparation
 The data to be analysed is obtained from Public Health Scotland. The data is publicly available on this link "https://www.opendata.nhs.scot/organization/isd". For the prescription data we accessed the "Data by Prescriber location" for the months of December 2023 to May 2024. We combined the data for all months under the dataframe called "data202324"
 
-We also loaded the data for health board names to allow easier handling than health board codes. This data was also obtained from Public Health Scotland through this link "https://www.opendata.nhs.scot/dataset/geography-codes-and-labels/resource/652ff726-e676-4a20-abda-435b98dd7bdc". This dataframe was called "hb_name".
+The data for health board names was also loaded to allow easier handling than health board codes. This data was also obtained from Public Health Scotland through this link "https://www.opendata.nhs.scot/dataset/geography-codes-and-labels/resource/652ff726-e676-4a20-abda-435b98dd7bdc". This dataframe was called "hb_name".
 
-Finally, the population data was downloaded on a local file and installed here under the name "population_data".
+Finally, the population data was downloaded on a local file and installed here under the name "population_data". This is required to calculate the prescription rate of each health board regions.
 ```{r message=FALSE, warning=FALSE}
 # Prescription data
 file_paths <- c(
@@ -50,6 +54,7 @@ raw_dataset <- file_paths %>%
 
 names(raw_dataset) <- c("data_dec2023", "data_jan2024", "data_feb2024,", "data_mar2024", "data_apr2024", "data_may2024")
 
+# The following code binds the prescription data for each month into one dataframe.
 data202324 <- do.call(rbind, raw_dataset)
 
 # Health board names data
@@ -68,7 +73,7 @@ population_data <- read_csv("C:/Users/koura/OneDrive/デスクトップ/4th year
 ```
 
 ## Data processing
-We now have the data for the number of prescription from December 2023 to May 2024, the health board names and population in 3 separate dataframes - "data202324", "hb_name" and "population_data" respectively. However, we would like to combine these three and filter out the data that we want, which is the prescription data for eczema cream in NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside. The following codes carry out this process. We also summed the prescription quantity for each healthboard to calculate the prescription rate per person. The processed data is called "processed_data202324".
+We now have the data for the prescription count for therapeutic drugs from December 2023 to May 2024, the health board names and population in 3 separate dataframes - "data202324", "hb_name" and "population_data" respectively. However, we would like to combine these three and filter out the data that we want, which is the prescription data for eczema cream in NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside. The following codes carry out this process. We also summed the prescription count for each health board and divided by the respective population size to calculate the prescription rate per person. The processed data is called "processed_data202324".
 
 ```{r message=FALSE, warning=FALSE}
 processed_data202324 <- data202324 %>% 
@@ -89,7 +94,7 @@ processed_data202324 <- data202324 %>%
   mutate("per_person" =  total_prescription/hb_population)
 ```
 
-# Data visualization
+## Data visualization
 Now we have the prescription rate for NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside under the dataframe called "processed_data202324". We can now visualize this to analyse the data. First, a table is made by using gt, which also shows the average prescription rate between the three health board regions.
 ```{r message=FALSE, warning=FALSE}
 table_202324 <- processed_data202324 %>%
@@ -109,7 +114,7 @@ table_202324 <- processed_data202324 %>%
 table_202324
 ```
 
-Although the table above helps us to compare the prescription rate between different months and health board regions, it is difficult to visualise the trend throughout the season. To do this, we can produce a graph using ggplot.
+Although the table above helps us to compare the prescription rate between different months and health board regions, it is difficult to visualise the trend throughout the months. To do this, we can produce a graph using ggplot.
 
 Before producing the graph, I decided to create a theme to give a consistent and unique appearance for the plot.
 ```{r message=FALSE, warning=FALSE}
@@ -139,7 +144,7 @@ theme_assessment <-
     legend.position="top")
 ```
 
-The codes below produces a graph based on "processed_data202324".
+The codes below produces a graph based on the data from  "processed_data202324".
 ```{r message=FALSE, warning=FALSE}
 graph_202324 <- 
   ggplot(processed_data202324, aes(x = paid_date_month, y = per_person, color = hb_name, group = hb_name)) +
@@ -151,10 +156,13 @@ graph_202324 <-
 
 graph_202324 + labs(x = "Month", y = "Number of prescription per person", title = "Prescription rate of eczema cream during allergy seasons in 2023/24", color = "")
 ```
-The graph shows that for all three health board regions, there is an increase in eczema cream prescription after February, although the largeness of change is varying. The most increase was observed in NHS Ayshire and Arran (0.052 to 0.087; +0.035), while for NHS Greater Glasgow and Clyde, the change was much more subtle (0.070 to 0.073; +0.003). Nonetheless, this upward trend continues up to May, showing that eczema prescription rate continuously increases during spring. Consequently, we can deduce that AE cases also rise throughout spring most likely due to increased pollen production.
+
+The graph shows that for all three health board regions, there is an increase in eczema cream prescription after February, although the largeness of change is varying. The most increase was observed in NHS Ayshire and Arran (0.052 to 0.087; +0.035), while for NHS Greater Glasgow and Clyde, the change was much more subtle (0.070 to 0.073; +0.003). Nonetheless, this upward trend mostly continues up to May for all health board regions, showing that eczema prescription rate generally increases continuously during spring. Consequently, we can deduce that AE cases rise throughout spring most likely due to seasonal pollen production.
+
+Prescription rates also seem to increase in January, notably for NHS Tayside and NHS Greater Glasgow and Clyde. The reasons for this could be allergies induced by food consumption during festive seasons, and/or increased healthcare activity compared to December.
 
 # Analysing data from 2020/21
-## Data Preparation
+## Data preparation
 We now move on to analysing the data from 2020/21, for the months from December to May. The overall process is identical to the 2023/24 analysis. The data for 2020/21 was similarly obtained from Public Health Scotland. The data from both years were not loaded together as it resulted in slow working process. The population and health board name data is the same as the data we used for 2023/24.
 ```{r message=FALSE, warning=FALSE}
 file_paths2 <- c(
@@ -175,7 +183,7 @@ data202021 <- do.call(rbind, raw_datasets2)
 ```
 
 ## Data processing
-The same process as the 2023/24 is conducted for the 2020/21 dataset.
+The same processing as the 2023/24 data is conducted for the 2020/21 dataset.
 ```{r message=FALSE, warning=FALSE}
 processed_data202021 <- data202021 %>% 
   full_join(hb_name) %>%
@@ -195,7 +203,7 @@ processed_data202021 <- data202021 %>%
   mutate("per_person" =  total_prescription/hb_population)
 ```
 
-# Data visualization
+## Data visualization
 The same gt function as the 2023/24 data is used to produce the table for "processed_data202021".
 ```{r message=FALSE, warning=FALSE}
 table_202021 <- processed_data202021 %>%
@@ -228,7 +236,7 @@ graph_202021 <-
   labs(x = "", y = "", color = "")
 ```
 
-The following code merges the graphs for 2023/24 and 2020/21.
+The following code combines the graphs for 2023/24 and 2020/21.
 ```{r message=FALSE, warning=FALSE}
 plot_comparison <- 
   graph_202324 + 
@@ -243,13 +251,16 @@ comparison_graph <-
 comparison_graph
 ```
 
-Overall, the prescription rate of eczema cream in 2020/21 is substantially lower than in 2023/24. 2020/21 Prescription rate in NHS Greater Glasgow and Clyde and NHS Tayside show almost no increase during spring seasons. However, NHS Ayrshire and Arran is an exception. Although the overall prescription rate is still much lower than in 2023/24, there is a relatively large jump in prescription rate from February to March in 2020/21 (0.0001287 to 0.0002546; +0.0001259). Interestingly, NHS Ayrshire and Arran is the health board with largest increase in prescription count in 2023/24 too, which indicates that the increase in allergy antigens is starkest in this area. This could be due to a range of reasons, including more allergy-inducing plants or poorer ventilation in households. It could also mean that government lockdown restrictions were not as strict as the other two health board regions.
+Overall, the prescription rate of eczema cream in 2020/21 is substantially lower than in 2023/24. 2020/21 Prescription rate in NHS Greater Glasgow and Clyde and NHS Tayside show almost no increase during spring seasons. However, NHS Ayrshire and Arran is an exception. Although the overall prescription rate is still much lower than in 2023/24, there is a relatively large jump in prescription rate from February to March in 2020/21 compared to the other two regions (0.0001287 to 0.0002546; +0.0001259). Interestingly, NHS Ayrshire and Arran is the health board with largest increase in prescription count in 2023/24 too, which indicates that the increase in allergy antigens is starkest in this area. This could be due to a range of reasons, including larger population of allergy-inducing plants or poorer ventilation in households. It could also mean that lockdown restrictions were not as strict as the other two health board regions.
 
-One reason for the overall decrease in eczema cream prescription rate could be due to reduced exposure to pollen. However, AE is not only caused by pollen, but also food or household mites. When comparing prescription rates during winter seasons, the values are still much lower in 2020/21. During this time, AE cases caused by food or house dust mites would still be occurring, so it is unlikely that the reduced prescription rate is merely caused by reduced pollen exposure. Instead, the drop in prescription rate is probably driven by restricted access to pharmaceuticals and drug stores as well. Other than government restrictions,  pharmaceuticals might have been avoided by people because they were scared of catching the virus. Since AE is not necessarily life-threatening, people may think it can be cured naturally or ignored.
+One reason for the overall decrease in eczema cream prescription rate could be due to reduced exposure to pollen. However, AE is not only caused by pollen, but also by food or household mites. When comparing prescription rates during winter seasons, the values are still much lower in 2020/21. During this time, AE cases caused by food or house dust mites would still be occurring, so it is unlikely that the prescription rates are merely reduced by a lack of pollen exposure. Instead, the drop in prescription rate is probably driven by restricted access to pharmaceuticals and drug stores as well. Other than government restrictions,  pharmaceuticals or healthcare facilities might have been avoided by people because they were scared of catching the virus. Since AE is not necessarily life-threatening, people may also think it can be cured naturally or be ignored as they see the risk of catching the virus as something worse. 
 
-## Conclusion
-To answer the research question "How does the prescription rate of eczema cream change during winter/spring seasons, and what effect did COVID-19 lockdown have on this?", prescription rate of eczema cream in 2023/24 showed an upward trend during spring seasons in NHS Ayshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside, which suggests that increased pollen count in these months resulted in more AE cases. 
+In other words, the drop in prescription rate is most likely to be caused by both reduced allergy cases due to lack of pollen exposure and also a decreased number of people reporting their symptoms. It seems more likely that the latter had greater influence on prescription rates in 2020/21, however further study is required to verify this.
 
-COVID-19 lockdown in 2020/21 drastically reduced the prescription rate for all studied regions. The size of change appears to be much greater than just a drop in pollen-induced AE, and instead it seems more reasonable to think that prescription rates decreased due to reduced access to drug stores, either due to government restrictions or people avoiding risks of potentially catching the virus. 
+# Conclusion and limitations
+To answer the research question "How does the prescription rate of eczema cream change during winter/spring seasons, and what effect did COVID-19 lockdown have on this?", prescription rate of eczema cream in 2023/24 showed an upward trend during spring seasons in NHS Ayshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside. This suggests a possible role of increased pollen production in the rise of eczema cream prescription rate. COVID-19 lockdown in 2020/21 drastically reduced the prescription rate for all studied regions, however it is unlikely that this was solely due to reduced exposure to pollen. The size of change appears to be much greater than just a drop in pollen-induced AE, and instead it seems more reasonable to think that prescription rates decreased due to reduced access to drug stores, either due to government restrictions or people avoiding risks of potentially catching the virus. Furthermore, the effect of lockdown on eczema cream prescription rate seems to have some regional specificity, as NHS Ayshire and Arran still showed an upward trend in spring despite the overall reduction. 
 
-The effect of lockdown on eczema cream prescription rate seems to have some regional specificity, as NHS Ayshire and Arran still showed an upward trend despite the overall reduction. This study can be further expanded upon by comparing this data with pollen counts or other AE-inducing antigens.
+The primary limitation in this study was the incomplete data availability. Prescription data for eczema cream was not readily recorded by Public Health Scotland for health board regions with high population, for example NHS Lothian. In certain months, it was not uncommon to see some data missing. Having access to a more complete data would have added greater value to this study, as we could have holistically looked at changes in prescription rate in different regions. Similarly, data for other anti-allergy treatments were not consistently available in 2020/21 and 2023/24. Hydrocortisone ointment/cream was one of the primary candidates for this study, as it is a common treatment used for treating allergic reactions, however, the data was only available in 2023/24. For consistency, the study limited the focus to eczema cream only, which perhaps failed to capture the full picture of anti-eczema cream usage in Scotland.
+
+# Nexts steps
+This study can be further expanded upon by analysing regional allergy cases and the primary antigens that causes the response. This may help to answer why eczema cream prescription rate decreased during lockdown. If pollen is the primary cause of allergy cases in Scotland, the reduced prescription rate in 2020/21 is more likely to be due to the lack of pollen exposure, that is reduced AE cases. However, if allergy cases caused by food or house dust mites are more frequent, the government restrictions probably had greater influence and the underlying numbers of allergy cases might not have changed as much. If taking a more biological route, one can also analyse population of specific allergy-causing plant species in these areas. This can perhaps answer questions regarding the regional specificity of eczema cream prescription in certain regions (e.g. there might be higher proportions of particular pollen producers that is leading to more eczema cream prescription). Another focus could be looking at different therapeutic approaches to allergic eczema. In addition hydrocortisone or corticosteroids, anti-histamines and anti-inflammatory treatments are also known to treat allergic reactions. Such drugs are also used in COVID-19 treatment, and therefore may show a different result compared to allergy-specific eczema cream.
