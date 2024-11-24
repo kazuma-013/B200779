@@ -361,35 +361,31 @@ display: none;
 <h2>Introduction</h2>
 <p>Atopic Eczema (AE) is a chronic skin condition that makes the skin
 inflamed, red, itchy and dry. It is commonly found in children and is
-associated with allergic reactions in response allergy antigens
+associated with allergic reactions in response to allergy antigens
 originating from food, house dust mites or pollen. Eczema creams are
 typically used to treat such symptoms, and as a person who grew up with
-eczema, it is a familiar pharmacological treatment. This personal
-interest has driven me to consider the eczema cream as the research
-focus for this report.</p>
-<p>The months entering spring (February to April) are said to be the
-months with the most allergy cases among children, perhaps coincided
-with both increased pollen and children going out. Hence, for the first
-part of this report, we will observe the change in prescription rate of
-Eczema cream during December 2023 to May 2024 which is the most recently
-available data. The health board regions considered are NHS Ayrshire and
-Arran, NHS Greater Glasgow and Clyde and NHS Tayside, as these were the
-regions were data was consistently available during those months.</p>
+AE, this is a familiar pharmacological treatment. This personal interest
+has driven me to consider the eczema cream as the research focus for
+this report.</p>
+<p>Spring is said to be the season with the most allergy cases among
+children, perhaps coincided with both increased pollen and children
+going out. Hence, for the first part of this report, we will observe the
+change in prescription rate of Eczema cream during December 2023 to May
+2024 which is the most recently available data. The health board regions
+considered are NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and
+NHS Tayside, as these were the regions were data was consistently
+available during those months.</p>
 <p>For the second part of the report, we will observe the same months in
 2020/21 in the same health board regions. During this time, the
-frequency of children going out would have been drastically lower than
-in 2023/24 due to the COVID-19 lockdown. Thus, it is reasonable to
-predict that allergy cases caused by pollen were lower too, and we aim
-to study whether eczema cream prescription rate were also reduced during
-2020/21.</p>
-<p>In summary, the research question for this report is: How does the
-prescription rate of Eczema cream change during winter/spring seasons,
-and what effect did COVID-19 lockdown have on this?</p>
-</div>
-<div id="installing-packages" class="section level2">
-<h2>Installing Packages</h2>
-<p>Before analysing the data, various packages are installed into R
-using the following code.</p>
+frequency of people going out would have been drastically lower than in
+2023/24 due to the COVID-19 lockdown. Thus, it is reasonable to predict
+that allergy cases caused by pollen will be lowered too. In fact, the
+lockdown season did improve my symptoms of AE. I wondered if lockdown
+similarly affected other patients who have AE. Therefore, the research
+question for this report is: How does the prescription rate of Eczema
+cream change during winter/spring seasons, and what effect did COVID-19
+lockdown have on this? ## Installing Packages Before analysing the data,
+various packages are installed into R using the following code.</p>
 <pre class="r"><code>library(tidyverse)
 library(janitor)
 library(gt)
@@ -403,12 +399,19 @@ library(patchwork)</code></pre>
 <h1>Analysing data from 2023/24</h1>
 <div id="data-preparation" class="section level2">
 <h2>Data Preparation</h2>
-<p>Together with the “Data by Prescriber location” from Public Health
-Scotland for the months of December 2023 to May 2024, the data on health
-board names and population are loaded too. This is required to match the
-health board codes with the name and to calculate the prescription rate
-respectively.</p>
-<pre class="r"><code>file_paths &lt;- c(
+<p>The data to be analysed is obtained from Public Health Scotland. The
+data is publicly available on this link “<a href="https://www.opendata.nhs.scot/organization/isd" class="uri">https://www.opendata.nhs.scot/organization/isd</a>”. For the
+prescription data we accessed the “Data by Prescriber location” for the
+months of December 2023 to May 2024. We combined the data for all months
+under the dataframe called “data202324”</p>
+<p>We also loaded the data for health board names to allow easier
+handling than health board codes. This data was also obtained from
+Public Health Scotland through this link “<a href="https://www.opendata.nhs.scot/dataset/geography-codes-and-labels/resource/652ff726-e676-4a20-abda-435b98dd7bdc" class="uri">https://www.opendata.nhs.scot/dataset/geography-codes-and-labels/resource/652ff726-e676-4a20-abda-435b98dd7bdc</a>”.
+This dataframe was called “hb_name”.</p>
+<p>Finally, the population data was downloaded on a local file and
+installed here under the name “population_data”.</p>
+<pre class="r"><code># Prescription data
+file_paths &lt;- c(
   &quot;https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/00cdf8d7-f784-4e87-894c-34f2540ea6ab/download/pitc202312.csv&quot;,
   &quot;https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d3eaaf84-0f3b-4fb8-9460-e33503095fbe/download/pitc202401.csv&quot;,
   &quot;https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/86fda652-0e1d-48bb-9368-aa2a560d925b/download/pitc202402.csv&quot;,
@@ -424,10 +427,12 @@ names(raw_dataset) &lt;- c(&quot;data_dec2023&quot;, &quot;data_jan2024&quot;, &
 
 data202324 &lt;- do.call(rbind, raw_dataset)
 
+# Health board names data
 hb_name &lt;- read_csv(&quot;https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv&quot;) %&gt;%
   clean_names() %&gt;%
   rename(hbt = hb)
 
+# Population data
 population_data &lt;- read_csv(&quot;C:/Users/koura/OneDrive/デスクトップ/4th year/Data Science/data_science/_data-science-for-health-bms-24-25/B200779/data/UV103_age_health_board_census.csv&quot;, skip = 10) %&gt;% 
   rename(Spare = &quot;...6&quot;, 
          hb_name = &quot;Health Board Area 2019&quot;,
@@ -467,9 +472,11 @@ person. The processed data is called “processed_data202324”.</p>
 </div>
 <div id="data-visualization" class="section level1">
 <h1>Data visualization</h1>
-<p>“processed_data202324” will be used for data visualization. First, a
-table is made by using gt, which also shows the average prescription
-rate between the three health board regions.</p>
+<p>Now we have the prescription rate for NHS Ayrshire and Arran, NHS
+Greater Glasgow and Clyde and NHS Tayside under the dataframe called
+“processed_data202324”. We can now visualize this to analyse the data.
+First, a table is made by using gt, which also shows the average
+prescription rate between the three health board regions.</p>
 <pre class="r"><code>table_202324 &lt;- processed_data202324 %&gt;%
   select(paid_date_month, per_person) %&gt;%
   pivot_wider(names_from = paid_date_month, values_from = per_person) %&gt;%
@@ -485,20 +492,20 @@ rate between the three health board regions.</p>
                      fmt = list(~ fmt_number(., decimals = 3)))
   
 table_202324</code></pre>
-<div id="fsvktwagjg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#fsvktwagjg table {
+<div id="tuqgxgcgnj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#tuqgxgcgnj table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#fsvktwagjg thead, #fsvktwagjg tbody, #fsvktwagjg tfoot, #fsvktwagjg tr, #fsvktwagjg td, #fsvktwagjg th {
+#tuqgxgcgnj thead, #tuqgxgcgnj tbody, #tuqgxgcgnj tfoot, #tuqgxgcgnj tr, #tuqgxgcgnj td, #tuqgxgcgnj th {
 border-style: none;
 }
-#fsvktwagjg p {
+#tuqgxgcgnj p {
 margin: 0;
 padding: 0;
 }
-#fsvktwagjg .gt_table {
+#tuqgxgcgnj .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -523,11 +530,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#fsvktwagjg .gt_caption {
+#tuqgxgcgnj .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#fsvktwagjg .gt_title {
+#tuqgxgcgnj .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -538,7 +545,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#fsvktwagjg .gt_subtitle {
+#tuqgxgcgnj .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -549,7 +556,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#fsvktwagjg .gt_heading {
+#tuqgxgcgnj .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -560,12 +567,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#fsvktwagjg .gt_bottom_border {
+#tuqgxgcgnj .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#fsvktwagjg .gt_col_headings {
+#tuqgxgcgnj .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -579,7 +586,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#fsvktwagjg .gt_col_heading {
+#tuqgxgcgnj .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -598,7 +605,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#fsvktwagjg .gt_column_spanner_outer {
+#tuqgxgcgnj .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -609,13 +616,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#fsvktwagjg .gt_column_spanner_outer:first-child {
+#tuqgxgcgnj .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#fsvktwagjg .gt_column_spanner_outer:last-child {
+#tuqgxgcgnj .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#fsvktwagjg .gt_column_spanner {
+#tuqgxgcgnj .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -626,10 +633,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#fsvktwagjg .gt_spanner_row {
+#tuqgxgcgnj .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#fsvktwagjg .gt_group_heading {
+#tuqgxgcgnj .gt_group_heading {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -654,7 +661,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#fsvktwagjg .gt_empty_group_heading {
+#tuqgxgcgnj .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -668,13 +675,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#fsvktwagjg .gt_from_md > :first-child {
+#tuqgxgcgnj .gt_from_md > :first-child {
 margin-top: 0;
 }
-#fsvktwagjg .gt_from_md > :last-child {
+#tuqgxgcgnj .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#fsvktwagjg .gt_row {
+#tuqgxgcgnj .gt_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -692,7 +699,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#fsvktwagjg .gt_stub {
+#tuqgxgcgnj .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -704,7 +711,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#fsvktwagjg .gt_stub_row_group {
+#tuqgxgcgnj .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -717,13 +724,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#fsvktwagjg .gt_row_group_first td {
+#tuqgxgcgnj .gt_row_group_first td {
 border-top-width: 2px;
 }
-#fsvktwagjg .gt_row_group_first th {
+#tuqgxgcgnj .gt_row_group_first th {
 border-top-width: 2px;
 }
-#fsvktwagjg .gt_summary_row {
+#tuqgxgcgnj .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -732,14 +739,14 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#fsvktwagjg .gt_first_summary_row {
+#tuqgxgcgnj .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#fsvktwagjg .gt_first_summary_row.thick {
+#tuqgxgcgnj .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#fsvktwagjg .gt_last_summary_row {
+#tuqgxgcgnj .gt_last_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -748,7 +755,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#fsvktwagjg .gt_grand_summary_row {
+#tuqgxgcgnj .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -757,7 +764,7 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#fsvktwagjg .gt_first_grand_summary_row {
+#tuqgxgcgnj .gt_first_grand_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -766,7 +773,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#fsvktwagjg .gt_last_grand_summary_row_top {
+#tuqgxgcgnj .gt_last_grand_summary_row_top {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -775,10 +782,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#fsvktwagjg .gt_striped {
+#tuqgxgcgnj .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#fsvktwagjg .gt_table_body {
+#tuqgxgcgnj .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -786,7 +793,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#fsvktwagjg .gt_footnotes {
+#tuqgxgcgnj .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -799,7 +806,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#fsvktwagjg .gt_footnote {
+#tuqgxgcgnj .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 4px;
@@ -807,7 +814,7 @@ padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#fsvktwagjg .gt_sourcenotes {
+#tuqgxgcgnj .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -820,64 +827,64 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#fsvktwagjg .gt_sourcenote {
+#tuqgxgcgnj .gt_sourcenote {
 font-size: 90%;
 padding-top: 4px;
 padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#fsvktwagjg .gt_left {
+#tuqgxgcgnj .gt_left {
 text-align: left;
 }
-#fsvktwagjg .gt_center {
+#tuqgxgcgnj .gt_center {
 text-align: center;
 }
-#fsvktwagjg .gt_right {
+#tuqgxgcgnj .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#fsvktwagjg .gt_font_normal {
+#tuqgxgcgnj .gt_font_normal {
 font-weight: normal;
 }
-#fsvktwagjg .gt_font_bold {
+#tuqgxgcgnj .gt_font_bold {
 font-weight: bold;
 }
-#fsvktwagjg .gt_font_italic {
+#tuqgxgcgnj .gt_font_italic {
 font-style: italic;
 }
-#fsvktwagjg .gt_super {
+#tuqgxgcgnj .gt_super {
 font-size: 65%;
 }
-#fsvktwagjg .gt_footnote_marks {
+#tuqgxgcgnj .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#fsvktwagjg .gt_asterisk {
+#tuqgxgcgnj .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#fsvktwagjg .gt_indent_1 {
+#tuqgxgcgnj .gt_indent_1 {
 text-indent: 5px;
 }
-#fsvktwagjg .gt_indent_2 {
+#tuqgxgcgnj .gt_indent_2 {
 text-indent: 10px;
 }
-#fsvktwagjg .gt_indent_3 {
+#tuqgxgcgnj .gt_indent_3 {
 text-indent: 15px;
 }
-#fsvktwagjg .gt_indent_4 {
+#tuqgxgcgnj .gt_indent_4 {
 text-indent: 20px;
 }
-#fsvktwagjg .gt_indent_5 {
+#tuqgxgcgnj .gt_indent_5 {
 text-indent: 25px;
 }
-#fsvktwagjg .katex-display {
+#tuqgxgcgnj .katex-display {
 display: inline-flex !important;
 margin-bottom: 0.75em !important;
 }
-#fsvktwagjg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#tuqgxgcgnj div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
 height: 0px !important;
 }
 </style>
@@ -990,7 +997,10 @@ most likely due to increased pollen production.</p>
 <h2>Data Preparation</h2>
 <p>We now move on to analysing the data from 2020/21, for the months
 from December to May. The overall process is identical to the 2023/24
-analysis.</p>
+analysis. The data for 2020/21 was similarly obtained from Public Health
+Scotland. The data from both years were not loaded together as it
+resulted in slow working process. The population and health board name
+data is the same as the data we used for 2023/24.</p>
 <pre class="r"><code>file_paths2 &lt;- c(
   &quot;https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0c033702-4d88-4f2d-989c-a709b1f4529e/download/pitc202012.csv&quot;,
   &quot;https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/7722a6e6-a6b6-49ec-aa63-fdc4bc727f05/download/pitc202101.csv&quot;,
@@ -1009,6 +1019,8 @@ data202021 &lt;- do.call(rbind, raw_datasets2)</code></pre>
 </div>
 <div id="data-processing-1" class="section level2">
 <h2>Data processing</h2>
+<p>The same process as the 2023/24 is conducted for the 2020/21
+dataset.</p>
 <pre class="r"><code>processed_data202021 &lt;- data202021 %&gt;% 
   full_join(hb_name) %&gt;%
   full_join(population_data) %&gt;%
@@ -1046,20 +1058,20 @@ for “processed_data202021”.</p>
                      fmt = list(~ fmt_number(., decimals = 7)))
   
 table_202021</code></pre>
-<div id="vlsacwlynz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#vlsacwlynz table {
+<div id="zscnyeqidt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#zscnyeqidt table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#vlsacwlynz thead, #vlsacwlynz tbody, #vlsacwlynz tfoot, #vlsacwlynz tr, #vlsacwlynz td, #vlsacwlynz th {
+#zscnyeqidt thead, #zscnyeqidt tbody, #zscnyeqidt tfoot, #zscnyeqidt tr, #zscnyeqidt td, #zscnyeqidt th {
 border-style: none;
 }
-#vlsacwlynz p {
+#zscnyeqidt p {
 margin: 0;
 padding: 0;
 }
-#vlsacwlynz .gt_table {
+#zscnyeqidt .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -1084,11 +1096,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#vlsacwlynz .gt_caption {
+#zscnyeqidt .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#vlsacwlynz .gt_title {
+#zscnyeqidt .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -1099,7 +1111,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#vlsacwlynz .gt_subtitle {
+#zscnyeqidt .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -1110,7 +1122,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#vlsacwlynz .gt_heading {
+#zscnyeqidt .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -1121,12 +1133,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#vlsacwlynz .gt_bottom_border {
+#zscnyeqidt .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#vlsacwlynz .gt_col_headings {
+#zscnyeqidt .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -1140,7 +1152,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#vlsacwlynz .gt_col_heading {
+#zscnyeqidt .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1159,7 +1171,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#vlsacwlynz .gt_column_spanner_outer {
+#zscnyeqidt .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1170,13 +1182,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#vlsacwlynz .gt_column_spanner_outer:first-child {
+#zscnyeqidt .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#vlsacwlynz .gt_column_spanner_outer:last-child {
+#zscnyeqidt .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#vlsacwlynz .gt_column_spanner {
+#zscnyeqidt .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -1187,10 +1199,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#vlsacwlynz .gt_spanner_row {
+#zscnyeqidt .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#vlsacwlynz .gt_group_heading {
+#zscnyeqidt .gt_group_heading {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1215,7 +1227,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#vlsacwlynz .gt_empty_group_heading {
+#zscnyeqidt .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -1229,13 +1241,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#vlsacwlynz .gt_from_md > :first-child {
+#zscnyeqidt .gt_from_md > :first-child {
 margin-top: 0;
 }
-#vlsacwlynz .gt_from_md > :last-child {
+#zscnyeqidt .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#vlsacwlynz .gt_row {
+#zscnyeqidt .gt_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1253,7 +1265,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#vlsacwlynz .gt_stub {
+#zscnyeqidt .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1265,7 +1277,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vlsacwlynz .gt_stub_row_group {
+#zscnyeqidt .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1278,13 +1290,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#vlsacwlynz .gt_row_group_first td {
+#zscnyeqidt .gt_row_group_first td {
 border-top-width: 2px;
 }
-#vlsacwlynz .gt_row_group_first th {
+#zscnyeqidt .gt_row_group_first th {
 border-top-width: 2px;
 }
-#vlsacwlynz .gt_summary_row {
+#zscnyeqidt .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -1293,14 +1305,14 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vlsacwlynz .gt_first_summary_row {
+#zscnyeqidt .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#vlsacwlynz .gt_first_summary_row.thick {
+#zscnyeqidt .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#vlsacwlynz .gt_last_summary_row {
+#zscnyeqidt .gt_last_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1309,7 +1321,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#vlsacwlynz .gt_grand_summary_row {
+#zscnyeqidt .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -1318,7 +1330,7 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vlsacwlynz .gt_first_grand_summary_row {
+#zscnyeqidt .gt_first_grand_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1327,7 +1339,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#vlsacwlynz .gt_last_grand_summary_row_top {
+#zscnyeqidt .gt_last_grand_summary_row_top {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1336,10 +1348,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#vlsacwlynz .gt_striped {
+#zscnyeqidt .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#vlsacwlynz .gt_table_body {
+#zscnyeqidt .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -1347,7 +1359,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#vlsacwlynz .gt_footnotes {
+#zscnyeqidt .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -1360,7 +1372,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#vlsacwlynz .gt_footnote {
+#zscnyeqidt .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 4px;
@@ -1368,7 +1380,7 @@ padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vlsacwlynz .gt_sourcenotes {
+#zscnyeqidt .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -1381,64 +1393,64 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#vlsacwlynz .gt_sourcenote {
+#zscnyeqidt .gt_sourcenote {
 font-size: 90%;
 padding-top: 4px;
 padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#vlsacwlynz .gt_left {
+#zscnyeqidt .gt_left {
 text-align: left;
 }
-#vlsacwlynz .gt_center {
+#zscnyeqidt .gt_center {
 text-align: center;
 }
-#vlsacwlynz .gt_right {
+#zscnyeqidt .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#vlsacwlynz .gt_font_normal {
+#zscnyeqidt .gt_font_normal {
 font-weight: normal;
 }
-#vlsacwlynz .gt_font_bold {
+#zscnyeqidt .gt_font_bold {
 font-weight: bold;
 }
-#vlsacwlynz .gt_font_italic {
+#zscnyeqidt .gt_font_italic {
 font-style: italic;
 }
-#vlsacwlynz .gt_super {
+#zscnyeqidt .gt_super {
 font-size: 65%;
 }
-#vlsacwlynz .gt_footnote_marks {
+#zscnyeqidt .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#vlsacwlynz .gt_asterisk {
+#zscnyeqidt .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#vlsacwlynz .gt_indent_1 {
+#zscnyeqidt .gt_indent_1 {
 text-indent: 5px;
 }
-#vlsacwlynz .gt_indent_2 {
+#zscnyeqidt .gt_indent_2 {
 text-indent: 10px;
 }
-#vlsacwlynz .gt_indent_3 {
+#zscnyeqidt .gt_indent_3 {
 text-indent: 15px;
 }
-#vlsacwlynz .gt_indent_4 {
+#zscnyeqidt .gt_indent_4 {
 text-indent: 20px;
 }
-#vlsacwlynz .gt_indent_5 {
+#zscnyeqidt .gt_indent_5 {
 text-indent: 25px;
 }
-#vlsacwlynz .katex-display {
+#zscnyeqidt .katex-display {
 display: inline-flex !important;
 margin-bottom: 0.75em !important;
 }
-#vlsacwlynz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#zscnyeqidt div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
 height: 0px !important;
 }
 </style>
@@ -1497,7 +1509,7 @@ height: 0px !important;
 <p>The table shows that the prescription rate of eczema cream in 2020/21
 for all health boards were very small, however we would like to compare
 these values to the one from 2023/24 in a graph to visually interpret
-the difference.</p>
+the difference in overall prescription rate and monthly changes.</p>
 <p>Again, the same codes for the graph for 2023/24 are repeated for the
 2020/21 data set.</p>
 <pre class="r"><code>graph_202021 &lt;- 
@@ -1526,22 +1538,22 @@ Greater Glasgow and Clyde and NHS Tayside show almost no increase during
 spring seasons. However, NHS Ayrshire and Arran is an exception.
 Although the overall prescription rate is still much lower than in
 2023/24, there is a relatively large jump in prescription rate from
-February to March in 2020/21. Interestingly, NHS Ayrshire and Arran is
-the health board with largest increase in prescription count in 2023/24
-too, which indicates that the increase in allergy antigens is starkest
-in this area. This could be due to a range of reasons, including more
-allergy-inducing plants or poorer ventilation in households. It could
-also mean that government lockdown restrictions were not as strict as
-Greater Glasgow and Clyde or Tayside.</p>
-<p>Since the overall prescription rate is much lower in 2020/21, it is
-tempting to think that the COVID-19 lockdown reduced exposure to pollen
-which is a key inducer of AE. However, AE is not only caused by pollen,
-but also food or household mites. When comparing prescription rates
-during winter seasons, the values are still much lower in 2020/21.
-During this time, AE cases caused by food or house dust mites would
-still be occurring, so it is unlikely that the reduced prescription rate
-is merely caused by lack of pollen exposure. Instead, reduced
-prescription rate is probably driven by restricted access to
+February to March in 2020/21 (0.0001287 to 0.0002546; +0.0001259).
+Interestingly, NHS Ayrshire and Arran is the health board with largest
+increase in prescription count in 2023/24 too, which indicates that the
+increase in allergy antigens is starkest in this area. This could be due
+to a range of reasons, including more allergy-inducing plants or poorer
+ventilation in households. It could also mean that government lockdown
+restrictions were not as strict as the other two health board
+regions.</p>
+<p>One reason for the overall decrease in eczema cream prescription rate
+could be due to reduced exposure to pollen. However, AE is not only
+caused by pollen, but also food or household mites. When comparing
+prescription rates during winter seasons, the values are still much
+lower in 2020/21. During this time, AE cases caused by food or house
+dust mites would still be occurring, so it is unlikely that the reduced
+prescription rate is merely caused by reduced pollen exposure. Instead,
+the drop in prescription rate is probably driven by restricted access to
 pharmaceuticals and drug stores as well. Other than government
 restrictions, pharmaceuticals might have been avoided by people because
 they were scared of catching the virus. Since AE is not necessarily
@@ -1552,8 +1564,8 @@ ignored.</p>
 <p>To answer the research question “How does the prescription rate of
 eczema cream change during winter/spring seasons, and what effect did
 COVID-19 lockdown have on this?”, prescription rate of eczema cream in
-2023/24 showed an upward trend during spring seasons in NHS Greater
-Glasgow and Clyde, NHS Ayshire and Arran and NHS Tayside, which suggests
+2023/24 showed an upward trend during spring seasons in NHS Ayshire and
+Arran, NHS Greater Glasgow and Clyde and NHS Tayside, which suggests
 that increased pollen count in these months resulted in more AE
 cases.</p>
 <p>COVID-19 lockdown in 2020/21 drastically reduced the prescription
