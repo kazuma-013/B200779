@@ -8,39 +8,52 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Introduction
+Atopic Eczema (AE) is a chronic skin condition that makes the skin inflamed, red, itchy and dry. It is commonly found in children and is associated with allergic reactions in response allergy antigens originating from food, house dust mites or pollen. Eczema creams are typically used to treat such symptoms, and as a person who grew up with eczema, it is a familiar pharmacological treatment. This personal interest has driven me to consider the eczema cream as the research focus for this report.
 
-## Data Preparation
-The following codes run the health data Public Health Scotland prescribing data from December 2023 to May 2024 and joins them with the population and health board data.
-```{r}
+The months entering spring (February to April) are said to be the months with the most allergy cases among children, perhaps coincided with both increased pollen and children going out. Hence, for the first part of this report, we will observe the change in prescription rate of Eczema cream during December 2023 to May 2024 which is the most recently available data. The health board regions considered are NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside, as these were the regions were data was consistently available during those months. 
+
+For the second part of the report, we will observe the same months in 2020/21 in the same health board regions. During this time, the frequency of children going out would have been drastically lower than in 2023/24 due to the COVID-19 lockdown. Thus, it is reasonable to predict that allergy cases caused by pollen were lower too, and we aim to study whether eczema cream prescription rate were also reduced during 2020/21.
+
+In summary, the research question for this report is:
+How does the prescription rate of Eczema cream change during winter/spring seasons, and what effect did COVID-19 lockdown have on this? 
+
+## Installing Packages
+Before analysing the data, various packages are installed into R using the following code. 
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(janitor)
 library(gt)
 library(here)
 library(readr)
+library(purrr)
+library(ggpubr)
+library(patchwork)
+```
 
-data_dec2023 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/00cdf8d7-f784-4e87-894c-34f2540ea6ab/download/pitc202312.csv") %>% 
-  clean_names()
+# Analysing data from 2023/24
+## Data Preparation
+Together with the "Data by Prescriber location" from Public Health Scotland for the months of December 2023 to May 2024, the data on health board names and population are loaded too. This is required to match the health board codes with the name and to calculate the prescription rate respectively.
+```{r message=FALSE, warning=FALSE}
+file_paths <- c(
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/00cdf8d7-f784-4e87-894c-34f2540ea6ab/download/pitc202312.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d3eaaf84-0f3b-4fb8-9460-e33503095fbe/download/pitc202401.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/86fda652-0e1d-48bb-9368-aa2a560d925b/download/pitc202402.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a42762ac-47cb-4fb6-b9b1-2478a588c0ed/download/pitc202403.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/409a02f2-b77c-47a0-917d-4a5a1c90f182/download/pitc202404.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5fbbd126-6166-4249-9620-7ed78e877297/download/pitc202405.csv")
 
-data_jan2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/d3eaaf84-0f3b-4fb8-9460-e33503095fbe/download/pitc202401.csv") %>% 
-  clean_names()
+raw_dataset <- file_paths %>%
+  map(read.csv) %>%
+  map(clean_names)
 
-data_feb2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/86fda652-0e1d-48bb-9368-aa2a560d925b/download/pitc202402.csv") %>% 
-  clean_names()
+names(raw_dataset) <- c("data_dec2023", "data_jan2024", "data_feb2024,", "data_mar2024", "data_apr2024", "data_may2024")
 
-data_march2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a42762ac-47cb-4fb6-b9b1-2478a588c0ed/download/pitc202403.csv") %>% 
-  clean_names()
-
-data_april2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/409a02f2-b77c-47a0-917d-4a5a1c90f182/download/pitc202404.csv") %>% 
-  clean_names()
-
-data_may2024 <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/5fbbd126-6166-4249-9620-7ed78e877297/download/pitc202405.csv") %>% 
-  clean_names()
+data202324 <- do.call(rbind, raw_dataset)
 
 hb_name <- read_csv("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/resource/652ff726-e676-4a20-abda-435b98dd7bdc/download/hb14_hb19.csv") %>%
   clean_names() %>%
   rename(hbt = hb)
-
-con_data <- rbind(data_dec2023, data_jan2024, data_feb2024,  data_march2024, data_april2024, data_may2024)
 
 population_data <- read_csv("C:/Users/koura/OneDrive/デスクトップ/4th year/Data Science/data_science/_data-science-for-health-bms-24-25/B200779/data/UV103_age_health_board_census.csv", skip = 10) %>% 
   rename(Spare = "...6", 
@@ -49,12 +62,15 @@ population_data <- read_csv("C:/Users/koura/OneDrive/デスクトップ/4th year
   filter(Age == "All people" & Sex == "All people") %>% 
   select(hb_name, hb_population) %>% 
   mutate(hb_name = paste("NHS", hb_name))
+```
 
-joined_data <- con_data %>% 
+## Data processing
+We now have the data for the number of prescription from December 2023 to May 2024, the health board names and population in 3 separate dataframes - "data202324", "hb_name" and "population_data" respectively. However, we would like to combine these three and filter out the data that we want, which is the prescription data for eczema cream in NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside. The following codes carry out this process. We also summed the prescription quantity for each healthboard to calculate the prescription rate per person. The processed data is called "processed_data202324".
+
+```{r message=FALSE, warning=FALSE}
+processed_data202324 <- data202324 %>% 
   full_join(hb_name) %>%
-  full_join(population_data)
-
-joined_data <- joined_data %>%
+  full_join(population_data) %>%
   mutate (paid_date_month = paid_date_month %>%
           factor() %>% 
           fct_recode("December" = "202312", 
@@ -62,44 +78,174 @@ joined_data <- joined_data %>%
                      "February" = "202402",
                      "March" = "202403", 
                      "April" = "202404",
-                     "May" = "202405"))
-```
-
-
-## Data processing
-The "joined_data" is processed to filter out prescription data for hydrocortisone cream/ointment in NHS lothian, NHS Greater Glasgow and Clyde and NHS Lanarkshire. The selection of health board was based on population size. To account for population differences among health boards, number of prescription per person was calculated as "per_person".
-```{r}
-refined_data <- joined_data %>%
-  filter(str_detect(bnf_item_description, "HYDROCORTISONE"),
-         grepl('CREAM|OINTMENT', bnf_item_description,), 
-         hb_name == "NHS Lothian" | hb_name == "NHS Greater Glasgow and Clyde" | hb_name == "NHS Lanarkshire") %>% 
+                     "May" = "202405")) %>%
+  filter(grepl('ECZEMA', bnf_item_description,), 
+         hb_name == "NHS Ayrshire and Arran" | hb_name == "NHS Greater Glasgow and Clyde" | hb_name == "NHS Tayside") %>% 
   group_by(hb_name, paid_date_month, hb_population) %>%
   summarise(total_prescription = sum(paid_quantity)) %>%
   mutate("per_person" =  total_prescription/hb_population)
 ```
 
-## Table
-```{r}
-table_HCS <- refined_data %>%
-  group_by(hb_name) %>%
+# Data visualization
+"processed_data202324" will be used for data visualization. First, a table is made by using gt, which also shows the average prescription rate between the three health board regions.
+```{r message=FALSE, warning=FALSE}
+table_202324 <- processed_data202324 %>%
   select(paid_date_month, per_person) %>%
-  gt() %>%
-  cols_label(paid_date_month = "Month",
-            per_person = "Number of prescription per person") %>%
-    tab_header(title = "Prescription rate of hydrocortisone cream/ointment in 2023/24",
-             subtitle = "Data from NHS Lanarkshire, NHS Greater Glasgow and Clyde and NHS Lothian") %>%
-  cols_align(align = "center", columns = per_person)
-
-table_HCS
+  pivot_wider(names_from = paid_date_month, values_from = per_person) %>%
+  group_by(hb_name) %>%
+  gt(rowname_col = "hb_name", groupname_col = "") %>%
+  tab_header(title = "Prescription rate of eczema cream in 2023/24",
+             subtitle = "Data from NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside") %>%
+  cols_align(align = "center",
+              columns = everything()) %>%
+  fmt_number(columns = everything(), decimals = 3) %>%
+  grand_summary_rows(columns = c(December, January, February, March, April, May), 
+                     fns = list("Overall Average" = ~mean(., na.rm = TRUE)),
+                     fmt = list(~ fmt_number(., decimals = 3)))
+  
+table_202324
 ```
 
-## Graph
-```{r}
-refined_data %>%
-  ggplot(aes(x = paid_date_month, y = per_person, color = hb_name, group = hb_name)) +
-  labs(x = "Month", y = "Number of prescription per person", title = "Prescription rate of hydrocortisone cream/ointment during allergy seasons in 2023/24", color = "Name of health board") +
-  geom_point() +
-  geom_line()
+Although the table above helps us to compare the prescription rate between different months and health board regions, it is difficult to visualise the trend throughout the season. To do this, we can produce a graph using ggplot.
+
+Before producing the graph, I decided to create a theme to give a consistent and unique appearance for the plot.
+```{r message=FALSE, warning=FALSE}
+theme_assessment <-
+  theme(
+    legend.text = element_text(
+      colour = "darkslategray4",
+      size = rel(1)
+    ),
+    axis.title = element_text(
+      colour = "darkslategray4",
+      size = rel(1.3)
+    ),
+    axis.text = element_text(
+      colour = "darkslategray3",
+      size = rel(1)
+    ),
+     axis.text.x = element_text(
+      angle = 60, vjust = 1, hjust=1
+    ),
+    axis.line = element_line(size = 1, colour = "black"),
+    axis.ticks = element_line(colour = "black", size = rel(1.4)),
+    panel.grid.major = element_line(colour = "grey", size = rel(0.5)),
+    panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = "aliceblue"),
+    legend.key = element_rect(fill = "aliceblue"),
+    legend.position="top")
 ```
 
-The graph illustrates a increase in prescription rate of hydrocortisone cream/ointment at the turn of year. Although the rates are unchanged/equal in January and February, they gradually increase in spring months for all health board regions studied. This is probably due to an increase in allergy cases caused by pollen. 
+The codes below produces a graph based on "processed_data202324".
+```{r message=FALSE, warning=FALSE}
+graph_202324 <- 
+  ggplot(processed_data202324, aes(x = paid_date_month, y = per_person, color = hb_name, group = hb_name)) +
+  geom_point(size = 2.5, shape = 18) +
+  geom_line(linewidth = 0.7) + 
+  theme_assessment + 
+  scale_colour_manual(values = c ("darkslateblue", "darkolivegreen3", "darkgoldenrod")) +
+  labs(x = "", y = "Number of prescription per person", color = "")
+
+graph_202324 + labs(x = "Month", y = "Number of prescription per person", title = "Prescription rate of eczema cream during allergy seasons in 2023/24", color = "")
+```
+The graph shows that for all three health board regions, there is an increase in eczema cream prescription after February, although the largeness of change is varying. The most increase was observed in NHS Ayshire and Arran (0.052 to 0.087; +0.035), while for NHS Greater Glasgow and Clyde, the change was much more subtle (0.070 to 0.073; +0.003). Nonetheless, this upward trend continues up to May, showing that eczema prescription rate continuously increases during spring. Consequently, we can deduce that AE cases also rise throughout spring most likely due to increased pollen production.
+
+# Analysing data from 2020/21
+## Data Preparation
+We now move on to analysing the data from 2020/21, for the months from December to May. The overall process is identical to the 2023/24 analysis.
+```{r message=FALSE, warning=FALSE}
+file_paths2 <- c(
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/0c033702-4d88-4f2d-989c-a709b1f4529e/download/pitc202012.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/7722a6e6-a6b6-49ec-aa63-fdc4bc727f05/download/pitc202101.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/3f5c55ac-1bcd-4c57-a7b6-12911f15239c/download/pitc202102.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/df6fc708-5c50-4d57-a5c4-faa19a92c227/download/pitc202103.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/51b7ad3f-6d52-4165-94f4-92e322656c85/download/pitc202104.csv",
+  "https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/167ffab7-a168-43d1-90c4-118aa955edfb/download/pitc202105.csv")
+
+raw_datasets2 <- file_paths2 %>%
+  map(read.csv) %>%
+  map(clean_names)
+
+names(raw_datasets2) <- c("data_dec2020", "data_jan2021", "data_feb2021,", "data_mar2021", "data_apr2021", "data_may2021")
+
+data202021 <- do.call(rbind, raw_datasets2)
+```
+
+## Data processing
+```{r message=FALSE, warning=FALSE}
+processed_data202021 <- data202021 %>% 
+  full_join(hb_name) %>%
+  full_join(population_data) %>%
+  mutate (paid_date_month = paid_date_month %>%
+        factor() %>% 
+        fct_recode("December" = "202012", 
+                    "January" = "202101",
+                    "February" = "202102",
+                    "March" = "202103", 
+                    "April" = "202104",
+                    "May" = "202105")) %>%
+  filter(grepl('ECZEMA', bnf_item_description,),
+         hb_name == "NHS Ayrshire and Arran" | hb_name == "NHS Greater Glasgow and Clyde" | hb_name == "NHS Tayside") %>% 
+  group_by(hb_name, paid_date_month, hb_population) %>%
+  summarise(total_prescription = sum(paid_quantity)) %>%
+  mutate("per_person" =  total_prescription/hb_population)
+```
+
+# Data visualization
+The same gt function as the 2023/24 data is used to produce the table for "processed_data202021".
+```{r message=FALSE, warning=FALSE}
+table_202021 <- processed_data202021 %>%
+  select(paid_date_month, per_person) %>%
+  pivot_wider(names_from = paid_date_month, values_from = per_person) %>%
+  group_by(hb_name) %>%
+  gt(rowname_col = "hb_name", groupname_col = "") %>%
+  tab_header(title = "Prescription rate of eczema cream in 2020/21",
+             subtitle = "Data from NHS Ayrshire and Arran, NHS Greater Glasgow and Clyde and NHS Tayside") %>%
+  cols_align(align = "center",
+              columns = everything()) %>%
+  fmt_number(columns = everything(), decimals = 7) %>%
+  grand_summary_rows(columns = c(December, January, February, March, April, May), 
+                     fns = list("Overall Average" = ~mean(., na.rm = TRUE)),
+                     fmt = list(~ fmt_number(., decimals = 7)))
+  
+table_202021
+```
+
+The table shows that the prescription rate of eczema cream in 2020/21 for all health boards were very small, however we would like to compare these values to the one from 2023/24 in a graph to visually interpret the difference.
+
+Again, the same codes for the graph for 2023/24 are repeated for the 2020/21 data set.
+```{r message=FALSE, warning=FALSE}
+graph_202021 <- 
+  ggplot(processed_data202021, aes(x = paid_date_month, y = per_person, color = hb_name, group = hb_name)) +
+  geom_point(size = 2.5, shape = 18) +
+  geom_line(linewidth = 0.7) +
+  theme_assessment + 
+  scale_colour_manual(values = c ("darkslateblue", "darkolivegreen3", "darkgoldenrod")) +
+  labs(x = "", y = "", color = "")
+```
+
+The following code merges the graphs for 2023/24 and 2020/21.
+```{r message=FALSE, warning=FALSE}
+plot_comparison <- 
+  graph_202324 + 
+  graph_202021
+
+comparison_graph <-
+  plot_comparison +
+  plot_spacer() + 
+  plot_annotation(title = "Change in eczema cream prescription rate during COVID-19 lockdown", subtitle = "The graph compares the eczema cream prescription rate in 2023/24 (left) and in 2020/21 (right)") + 
+  plot_layout(widths = c(1,1), heights = unit(c(6, 6), c('cm', 'null')), guides = "collect") & theme(legend.position = 'top')
+
+comparison_graph
+```
+
+Overall, the prescription rate of eczema cream in 2020/21 is substantially lower than in 2023/24. 2020/21 Prescription rate in NHS Greater Glasgow and Clyde and NHS Tayside show almost no increase during spring seasons. However, NHS Ayrshire and Arran is an exception. Although the overall prescription rate is still much lower than in 2023/24, there is a relatively large jump in prescription rate from February to March in 2020/21. Interestingly, NHS Ayrshire and Arran is the health board with largest increase in prescription count in 2023/24 too, which indicates that the increase in allergy antigens is starkest in this area. This could be due to a range of reasons, including more allergy-inducing plants or poorer ventilation in households. It could also mean that government lockdown restrictions were not as strict as Greater Glasgow and Clyde or Tayside.
+
+Since the overall prescription rate is much lower in 2020/21, it is tempting to think that the COVID-19 lockdown reduced exposure to pollen which is a key inducer of AE. However, AE is not only caused by pollen, but also food or household mites. When comparing prescription rates during winter seasons, the values are still much lower in 2020/21. During this time, AE cases caused by food or house dust mites would still be occurring, so it is unlikely that the reduced prescription rate is merely caused by lack of pollen exposure. Instead, reduced prescription rate is probably driven by restricted access to pharmaceuticals and drug stores as well. Other than government restrictions,  pharmaceuticals might have been avoided by people because they were scared of catching the virus. Since AE is not necessarily life-threatening, people may think it can be cured naturally or ignored.
+
+## Conclusion
+To answer the research question "How does the prescription rate of eczema cream change during winter/spring seasons, and what effect did COVID-19 lockdown have on this?", prescription rate of eczema cream in 2023/24 showed an upward trend during spring seasons in NHS Greater Glasgow and Clyde, NHS Ayshire and Arran and NHS Tayside, which suggests that increased pollen count in these months resulted in more AE cases. 
+
+COVID-19 lockdown in 2020/21 drastically reduced the prescription rate for all studied regions. The size of change appears to be much greater than just a drop in pollen-induced AE, and instead it seems more reasonable to think that prescription rates decreased due to reduced access to drug stores, either due to government restrictions or people avoiding risks of potentially catching the virus. 
+
+The effect of lockdown on eczema cream prescription rate seems to have some regional specificity, as NHS Ayshire and Arran still showed an upward trend despite the overall reduction. This study can be further expanded upon by comparing this data with pollen counts or other AE-inducing antigens.
